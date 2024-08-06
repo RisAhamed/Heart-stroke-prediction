@@ -10,6 +10,8 @@ pymongo
 catboost
 PyYAML
 dill
-
+seaborn
+matplotlib
+ipkernal
 
 - e.
