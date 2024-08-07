@@ -19,9 +19,11 @@ from hs.constants.training_pipeline import SCHEMA_FILE_PATH,TARGET_COLUMN
 
 
 class DataTransformation:
-    def __init__(self, data_ingestion_artifact: DataIngestionArtifact,
-                 data_transformation_config: DataTransformationConfig,
-                 data_validation_artifact: DataValidationArtifact):
+    def __init__(self, 
+                 data_ingestion_artifact: DataIngestionArtifact,
+                 
+                 data_validation_artifact: DataValidationArtifact,
+                 data_transformation_config: DataTransformationConfig):
         """
 
         :param data_ingestion_artifact: Output reference of data ingestion artifact stage

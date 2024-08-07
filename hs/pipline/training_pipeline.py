@@ -1,13 +1,10 @@
 import sys
 from typing import Tuple
-
 from hs.components.data_ingestion import DataIngestion
 from hs.components.data_transformation import DataTransformation
 from hs.components.data_validation import DataValidation
-from hs.entity.artifact_entity import DataIngestionArtifact,DataValidationArtifact
-                                                 
-from hs.entity.config_entity import DataIngestionConfig, DataValidationConfig
-                                               
+from hs.entity.artifact_entity import DataIngestionArtifact,DataValidationArtifact,DataTransformationArtifact                          
+from hs.entity.config_entity import DataIngestionConfig, DataValidationConfig,DataTransformationConfig                                              
 from hs.exception import CustomException
 from hs.logger import logging
 from pandas import DataFrame
@@ -17,6 +14,7 @@ class TrainPipeline:
     def __init__(self):
         self.data_ingestion_config = DataIngestionConfig()
         self.data_validation_config = DataValidationConfig()
+        self.data_transformation_config = DataTransformationConfig()
         
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
@@ -49,7 +47,7 @@ class TrainPipeline:
         try:
             data_validation = DataValidation(
                 data_ingestion_artifact=data_ingestion_artifact,
-                data_validation_config=self.data_validation_config,
+                data_validation_config=self.data_validation_config
             )
 
             data_validation_artifact = data_validation.initiate_data_validation()
@@ -66,7 +64,26 @@ class TrainPipeline:
             raise CustomException(e, sys) from e
         
 
-
+    def start_data_transformation(self,data_ingestion_artifact:DataIngestionArtifact,data_validation_artifact:DataValidationArtifact) -> DataTransformationArtifact:
+        """
+        This method of TrainPipeline class is responsible for starting data transformation  
+        """
+        try:
+            data_transformation = DataTransformation(
+                data_ingestion_artifact = data_ingestion_artifact,
+                data_validation_artifact = data_validation_artifact,
+data_transformation_config = self.data_transformation_config,
+         )
+            data_transformation_artifact = (
+                data_transformation.initiate_data_transformation()
+            )
+            return data_transformation_artifact
+        except Exception as e:
+            raise CustomException(e,sys)
+        
+        
+                                  
+            
 
     def run_pipeline(self,) -> None:
         """
@@ -75,5 +92,8 @@ class TrainPipeline:
         try:
             data_ingestion_artifact = self.start_data_ingestion()
             data_validation_artifact = self.start_data_validation(data_ingestion_artifact=data_ingestion_artifact)
-        except:
-            pass
+            data_transformation_artifact = self.start_data_transformation(data_ingestion_artifact = data_ingestion_artifact,
+                                                                          data_validation_artifact = data_validation_artifact)
+            
+        except Exception as e:
+            raise CustomException(e,sys)
