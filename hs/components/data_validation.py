@@ -3,8 +3,8 @@ import sys
 from typing import Tuple, Union
 import pandas as pd
 from pandas import DataFrame
-# from evidently.model_profile import Profile
-# from evidently.model_profile.sections import DataDriftProfileSection
+from evidently.model_profile import Profile
+from evidently.model_profile.sections import DataDriftProfileSection, CatTargetDriftProfileSection
 from hs.exception import CustomException
 from hs.logger import logging
 from hs.utils.main_utils import read_yaml_file, write_yaml_file
