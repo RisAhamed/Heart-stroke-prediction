@@ -1,10 +1,14 @@
+from ipaddress import ip_address
 import sys
 from typing import Tuple
 from hs.components.data_ingestion import DataIngestion
 from hs.components.data_transformation import DataTransformation
 from hs.components.data_validation import DataValidation
-from hs.entity.artifact_entity import DataIngestionArtifact,DataValidationArtifact,DataTransformationArtifact                          
-from hs.entity.config_entity import DataIngestionConfig, DataValidationConfig,DataTransformationConfig                                              
+from hs.components.model_evaluation import ModelEvaluation
+from hs.components.model_trainer import ModelTrainer
+from hs.entity.artifact_entity import DataIngestionArtifact,DataValidationArtifact,DataTransformationArtifact,ModelTrainerArtifact ,ModelEvaluationArtifact                         
+from hs.entity.config_entity import DataIngestionConfig, DataValidationConfig,DataTransformationConfig ,ModelTrainerConfig ,ModelEvaluationConfig
+
 from hs.exception import CustomException
 from hs.logger import logging
 from pandas import DataFrame
@@ -15,6 +19,8 @@ class TrainPipeline:
         self.data_ingestion_config = DataIngestionConfig()
         self.data_validation_config = DataValidationConfig()
         self.data_transformation_config = DataTransformationConfig()
+        self.model_trainer_config = ModelTrainerConfig()
+        self.model_evaluation_config = ModelEvaluationConfig()
         
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
@@ -80,6 +86,34 @@ data_transformation_config = self.data_transformation_config,
             return data_transformation_artifact
         except Exception as e:
             raise CustomException(e,sys)
+    
+    def start_model_trainer(self, data_transformation_artifact: DataTransformationArtifact) -> ModelTrainerArtifact:
+        """
+        This method of TrainPipeline class is responsible for starting model trainer component
+        """
+        try:
+            model_trainer = ModelTrainer(
+                data_transformation_artifact=data_transformation_artifact,
+                model_trainer_config=self.model_trainer_config,
+            )
+            model_trainer_artifact = model_trainer.initiate_model_trainer()
+            return model_trainer_artifact
+
+        except Exception as e:
+            raise CustomException(e, sys) from e
+
+    def start_model_evaluation(self,model_trainer_artifact: ModelTrainerArtifact,data_ingestion_artifact = DataIngestionArtifact)->ModelTrainerArtifact:
+        try:
+            model_evaluater = ModelEvaluation(
+                model_trainer_artifact=model_trainer_artifact,
+                data_ingestion_artifact=data_ingestion_artifact,
+                model_evaluation_config=self.model_evaluation_config,
+            )
+            model_evaluation_Artifact = model_evaluater.initiate_model_evaluation()
+            return model_evaluation_Artifact
+        except Exception as e:
+            raise CustomException(e, sys) from e
+    
         
         
                                   
@@ -94,6 +128,7 @@ data_transformation_config = self.data_transformation_config,
             data_validation_artifact = self.start_data_validation(data_ingestion_artifact=data_ingestion_artifact)
             data_transformation_artifact = self.start_data_transformation(data_ingestion_artifact = data_ingestion_artifact,
                                                                           data_validation_artifact = data_validation_artifact)
+            model_trainer_artifact = self.start_model_trainer(data_transformation_artifact=data_transformation_artifact)
             
         except Exception as e:
             raise CustomException(e,sys)
