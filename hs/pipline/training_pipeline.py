@@ -4,10 +4,11 @@ from typing import Tuple
 from hs.components.data_ingestion import DataIngestion
 from hs.components.data_transformation import DataTransformation
 from hs.components.data_validation import DataValidation
+from hs.components.model_pusher import ModelPusher
 from hs.components.model_evaluation import ModelEvaluation
 from hs.components.model_trainer import ModelTrainer
-from hs.entity.artifact_entity import DataIngestionArtifact,DataValidationArtifact,DataTransformationArtifact,ModelTrainerArtifact ,ModelEvaluationArtifact                         
-from hs.entity.config_entity import DataIngestionConfig, DataValidationConfig,DataTransformationConfig ,ModelTrainerConfig ,ModelEvaluationConfig
+from hs.entity.artifact_entity import DataIngestionArtifact,DataValidationArtifact,DataTransformationArtifact,ModelTrainerArtifact ,ModelEvaluationArtifact ,ModelPusherArtifact                        
+from hs.entity.config_entity import DataIngestionConfig, DataValidationConfig,DataTransformationConfig ,ModelTrainerConfig ,ModelEvaluationConfig,ModelPusherConfig
 
 from hs.exception import CustomException
 from hs.logger import logging
@@ -21,6 +22,7 @@ class TrainPipeline:
         self.data_transformation_config = DataTransformationConfig()
         self.model_trainer_config = ModelTrainerConfig()
         self.model_evaluation_config = ModelEvaluationConfig()
+        self.model_pusher_config = ModelPusherConfig()
         
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
@@ -102,7 +104,7 @@ data_transformation_config = self.data_transformation_config,
         except Exception as e:
             raise CustomException(e, sys) from e
 
-    def start_model_evaluation(self,model_trainer_artifact: ModelTrainerArtifact,data_ingestion_artifact = DataIngestionArtifact)->ModelTrainerArtifact:
+    def start_model_evaluation(self,model_trainer_artifact: ModelTrainerArtifact,data_ingestion_artifact = DataIngestionArtifact)->ModelEvaluationArtifact:
         try:
             model_evaluater = ModelEvaluation(
                 model_trainer_artifact=model_trainer_artifact,
@@ -113,11 +115,21 @@ data_transformation_config = self.data_transformation_config,
             return model_evaluation_Artifact
         except Exception as e:
             raise CustomException(e, sys) from e
+
     
-        
-        
-                                  
-            
+    def start_model_pusher(self, model_trainer_artifact: ModelTrainerArtifact,):
+        """
+        This method of TrainPipeline class is responsible for starting model pusher component
+        """
+        try:
+            model_pusher = ModelPusher( 
+                model_trainer_artifact=model_trainer_artifact,
+                model_pusher_config=self.model_pusher_config,
+            )
+            model_pusher_artifact = model_pusher.initiate_model_pusher()
+            return model_pusher_artifact
+        except Exception as e:
+            raise CustomException(e, sys) from e
 
     def run_pipeline(self,) -> None:
         """
@@ -129,6 +141,13 @@ data_transformation_config = self.data_transformation_config,
             data_transformation_artifact = self.start_data_transformation(data_ingestion_artifact = data_ingestion_artifact,
                                                                           data_validation_artifact = data_validation_artifact)
             model_trainer_artifact = self.start_model_trainer(data_transformation_artifact=data_transformation_artifact)
+            model_evaluation_artifact = self.start_model_evaluation(model_trainer_artifact=model_trainer_artifact)
+            if not model_evaluation_artifact.is_model_accepted:
+                logging.info(f"Model not accepted.")
+                return None
+            model_pusher_artifact = self.start_model_pusher(
+                model_trainer_artifact=model_trainer_artifact
+            )
             
         except Exception as e:
             raise CustomException(e,sys)

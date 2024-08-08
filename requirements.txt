@@ -3,6 +3,7 @@ gunicorn
 Jinja2
 Werkzeug
 numpy
+boto3
 pandas
 scikit-learn
 dnspython
@@ -15,5 +16,6 @@ matplotlib
 # ipykernal
 imblearn
 xgboost
+fastapi
 
 -e .
